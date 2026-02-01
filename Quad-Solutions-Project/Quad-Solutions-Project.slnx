@@ -1,0 +1,8 @@
+<Solution>
+  <Project Path="Quad-Solutions-Project.ApiService/Quad-Solutions-Project.ApiService.csproj" />
+  <Project Path="Quad-Solutions-Project.AppHost/Quad-Solutions-Project.AppHost.csproj" />
+  <Project Path="Quad-Solutions-Project.Models/Quad-Solutions-Project.Models.csproj" Id="bcb9db58-2992-42d6-a10c-881bf04e1bb3" />
+  <Project Path="Quad-Solutions-Project.ServiceDefaults/Quad-Solutions-Project.ServiceDefaults.csproj" />
+  <Project Path="Quad-Solutions-Project.Tests/Quad-Solutions-Project.Tests.csproj" />
+  <Project Path="Quad-Solutions-Project.Web/Quad-Solutions-Project.Web.csproj" />
+</Solution>
