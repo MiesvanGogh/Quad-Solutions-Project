@@ -10,8 +10,4 @@
     <ProjectReference Include="..\Quad-Solutions-Project.ServiceDefaults\Quad-Solutions-Project.ServiceDefaults.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Controllers\" />
-  </ItemGroup>
-
 </Project>
