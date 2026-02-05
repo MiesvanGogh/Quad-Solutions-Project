@@ -1,37 +1,61 @@
+﻿using Microsoft.OpenApi;
+using Quad_Solutions_Project.ApiClient;
+using Quad_Solutions_Project.BusnLogic.Services;
+using Quad_Solutions_Project.Models;
+using Quad_Solutions_Project.Models.Interfaces;
+
+const string OpenTdbBaseUrl = "https://opentdb.com/";
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
-builder.AddServiceDefaults();
+// ─── Dependency Injection ───────────────────────────────────────────
 
-// Add services to the container.
-builder.Services.AddProblemDetails();
+// Typed HttpClient for the Open Trivia Database
+builder.Services.AddHttpClient<IOpenTdbClient, OpenTdbClient>(client =>
+{
+    client.BaseAddress = new Uri(OpenTdbBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(10);
+});
+
+// AnswerStore is a singleton
+builder.Services.AddSingleton<AnswerService>();
+
+// TriviaService is transient
+builder.Services.AddTransient<ITriviaService, TriviaService>();
+
+// Controllers + API Explorer
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+
+// Swagger / OpenAPI documentation
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "TriviaApp Intermediate API",
+        Version = "v1",
+        Description = "A proxy API that sits between the frontend and the Open Trivia Database. " +
+                      "Correct answers are stored server-side and never exposed until the user commits to a choice."
+    });
+});
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-app.UseExceptionHandler();
-
-string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
-
-app.MapGet("/weatherforecast", () =>
+// Development-only: Swagger
+if (app.Environment.IsDevelopment())
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
-app.MapDefaultEndpoints();
-
-app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+// Enable CORS
+app.UseCors(policy =>
+    policy
+        .AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader());
+
+// Map controllers
+app.MapControllers();
+
+await app.RunAsync();
