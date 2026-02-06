@@ -34,12 +34,18 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "TriviaApp Intermediate API",
         Version = "v1",
-        Description = "A proxy API that sits between the frontend and the Open Trivia Database. " +
-                      "Correct answers are stored server-side and never exposed until the user commits to a choice."
+        Description =
+            "A proxy API that sits between the frontend and the Open Trivia Database. " +
+            "Correct answers are stored server-side and never exposed until the user commits to a choice."
     });
 });
 
+// 🔹 Aspire health checks (REQUIRED)
+builder.Services.AddHealthChecks();
+
 var app = builder.Build();
+
+// ─── Middleware ─────────────────────────────────────────────────────
 
 // Development-only: Swagger
 if (app.Environment.IsDevelopment())
@@ -57,5 +63,8 @@ app.UseCors(policy =>
 
 // Map controllers
 app.MapControllers();
+
+// 🔹 Health endpoint for Aspire
+app.MapHealthChecks("/health");
 
 await app.RunAsync();
