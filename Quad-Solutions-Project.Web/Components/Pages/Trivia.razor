@@ -1,0 +1,409 @@
+﻿@page "/trivia"
+@rendermode InteractiveServer
+@using Quad_Solutions_Project.Models
+@using System.Net.Http
+@using System.Net.Http.Json
+@inject HttpClient Http
+
+<PageTitle>Trivia Game</PageTitle>
+
+<h1>Trivia Game</h1>
+
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <div class="alert alert-danger" role="alert">
+        @_errorMessage
+    </div>
+}
+
+@if (_questions.Count == 0)
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">Start a New Game</h5>
+
+            <div class="mb-3">
+                <label for="amount" class="form-label">Number of Questions:</label>
+                <input type="number" class="form-control" id="amount" @bind="_amount" min="1" max="50" />
+            </div>
+
+            <div class="mb-3">
+                <label for="category" class="form-label">Category:</label>
+                <select class="form-select" id="category" @bind="_categoryId">
+                    <option value="">Any Category</option>
+                    <option value="9">General Knowledge</option>
+                    <option value="10">Entertainment: Books</option>
+                    <option value="11">Entertainment: Film</option>
+                    <option value="12">Entertainment: Music</option>
+                    <option value="14">Entertainment: Television</option>
+                    <option value="15">Entertainment: Video Games</option>
+                    <option value="17">Science &amp; Nature</option>
+                    <option value="18">Science: Computers</option>
+                    <option value="19">Science: Mathematics</option>
+                    <option value="20">Mythology</option>
+                    <option value="21">Sports</option>
+                    <option value="22">Geography</option>
+                    <option value="23">History</option>
+                    <option value="24">Politics</option>
+                    <option value="25">Art</option>
+                    <option value="27">Animals</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="difficulty" class="form-label">Difficulty:</label>
+                <select class="form-select" id="difficulty" @bind="_difficulty">
+                    <option value="">Any Difficulty</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label for="type" class="form-label">Question Type:</label>
+                <select class="form-select" id="type" @bind="_type">
+                    <option value="">Any Type</option>
+                    <option value="multiple">Multiple Choice</option>
+                    <option value="boolean">True / False</option>
+                </select>
+            </div>
+
+            <button class="btn btn-primary" @onclick="FetchQuestions" disabled="@_isLoading">
+                @if (_isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span> Loading...</span>
+                }
+                else
+                {
+                    <span>Start Game</span>
+                }
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="mb-3">
+        <h4>Question @(_currentQuestionIndex + 1) of @_questions.Count</h4>
+        <div class="progress mb-3">
+            <div class="progress-bar" role="progressbar" style="width: @((_currentQuestionIndex + 1) * 100.0 / _questions.Count)%"></div>
+        </div>
+    </div>
+
+    @if (_currentQuestionIndex < _questions.Count)
+    {
+        var question = _questions[_currentQuestionIndex];
+
+        <div class="card">
+            <div class="card-header">
+                <strong>@question.Category</strong> - @question.Difficulty
+            </div>
+            <div class="card-body">
+                <h5 class="card-text mb-4">@question.Question</h5>
+
+                @if (_answeredQuestions.ContainsKey(question.QuestionId))
+                {
+                    var result = _answeredQuestions[question.QuestionId];
+                    <div class="alert @(result.IsCorrect ? "alert-success" : "alert-danger")">
+                        @if (result.IsCorrect)
+                        {
+                            <strong>✓ Correct!</strong>
+                        }
+                        else
+                        {
+                            <strong>✗ Incorrect.</strong>
+                            <span> The correct answer was: <strong>@result.CorrectAnswer</strong></span>
+                        }
+                    </div>
+
+                    @foreach (var option in question.Options)
+                    {
+                        var isCorrect = option == result.CorrectAnswer;
+                        var wasSelected = option == _selectedAnswers[question.QuestionId];
+                        var buttonClass = isCorrect ? "btn-success" : (wasSelected ? "btn-danger" : "btn-outline-secondary");
+
+                        <button class="btn @buttonClass w-100 mb-2" disabled>
+                            @option
+                            @if (isCorrect)
+                            {
+                                <span> ✓</span>
+                            }
+                            @if (wasSelected && !isCorrect)
+                            {
+                                <span> ✗</span>
+                            }
+                        </button>
+                    }
+
+                    @if (_currentQuestionIndex < _questions.Count - 1)
+                    {
+                        <button class="btn btn-primary mt-3" @onclick="NextQuestion">Next Question →</button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-success mt-3" @onclick="ShowResults">Show Final Results</button>
+                    }
+                }
+                else
+                {
+                    @foreach (var option in question.Options)
+                    {
+                        var isSelected = _currentSelection == option;
+                        <button class="btn @(isSelected ? "btn-primary" : "btn-outline-primary") w-100 mb-2"
+                                @onclick="() => SelectAnswer(option)">
+                            @option
+                        </button>
+                    }
+
+                    <button class="btn btn-success w-100 mt-3"
+                            @onclick="SubmitAnswer"
+                            disabled="@(string.IsNullOrEmpty(_currentSelection) || _isLoading)">
+                        @if (_isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span> Checking...</span>
+                        }
+                        else
+                        {
+                            <span>Submit Answer</span>
+                        }
+                    </button>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>Game Complete! 🎉</h3>
+                <p class="lead">You scored @_correctAnswers out of @_questions.Count</p>
+                <div class="display-4 mb-4">@(((double)_correctAnswers / _questions.Count) * 100)%</div>
+                <button class="btn btn-primary" @onclick="ResetGame">Play Again</button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    /// <summary>
+    /// Number of questions to fetch.
+    /// </summary>
+    private int _amount { get; set; } = 10;
+
+    /// <summary>
+    /// Category ID (optional).
+    /// </summary>
+    private string _categoryId { get; set; } = "";
+
+    /// <summary>
+    /// Difficulty level (optional).
+    /// </summary>
+    private string _difficulty { get; set; } = "";
+
+    /// <summary>
+    /// Question type (optional).
+    /// </summary>
+    private string _type { get; set; } = "";
+
+    /// <summary>
+    /// List of questions fetched from the API.
+    /// </summary>
+    private List<TriviaQuestionResponse> _questions { get; set; } = new();
+
+    /// <summary>
+    /// The index of the currently displayed question.
+    /// </summary>
+    private int _currentQuestionIndex { get; set; } = 0;
+
+    /// <summary>
+    /// The option currently selected by the user for the current question.
+    /// </summary>
+    private string? _currentSelection { get; set; }
+
+    /// <summary>
+    /// Tracks which option the user selected for each question (by QuestionId).
+    /// </summary>
+    private Dictionary<string, string> _selectedAnswers { get; set; } = new();
+
+    /// <summary>
+    /// Stores the check-answer results for each answered question (by QuestionId).
+    /// </summary>
+    private Dictionary<string, CheckAnswerResponse> _answeredQuestions { get; set; } = new();
+
+    /// <summary>
+    /// The number of correct answers the user has given.
+    /// </summary>
+    private int _correctAnswers { get; set; } = 0;
+
+    /// <summary>
+    /// Indicates whether an API call is currently in progress.
+    /// </summary>
+    private bool _isLoading { get; set; } = false;
+
+    /// <summary>
+    /// Stores any error message to display to the user.
+    /// </summary>
+    private string? _errorMessage { get; set; }
+
+    /// <summary>
+    /// Fetches questions from the API and starts a new game.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task FetchQuestions()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            // Build query string with all 4 parameters
+            var queryParams = new List<string>();
+            queryParams.Add($"amount={_amount}");
+
+            if (!string.IsNullOrEmpty(_categoryId))
+            {
+                queryParams.Add($"category={_categoryId}");
+            }
+
+            if (!string.IsNullOrEmpty(_difficulty))
+            {
+                queryParams.Add($"difficulty={_difficulty}");
+            }
+
+            if (!string.IsNullOrEmpty(_type))
+            {
+                queryParams.Add($"type={_type}");
+            }
+
+            var queryString = string.Join("&", queryParams);
+            var url = $"https://localhost:7326/api/questions?{queryString}";
+
+            var response = await Http.GetFromJsonAsync<List<TriviaQuestionResponse>>(url);
+
+            if (response != null && response.Count > 0)
+            {
+                _questions = response;
+                _currentQuestionIndex = 0;
+                _answeredQuestions.Clear();
+                _selectedAnswers.Clear();
+                _correctAnswers = 0;
+                _currentSelection = null;
+            }
+            else
+            {
+                _errorMessage = "No questions were returned from the API.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            _errorMessage = $"Failed to connect to the API: {ex.Message}. Please ensure the backend is running.";
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Selects an answer option for the current question.
+    /// </summary>
+    /// <param name="option">The selected answer option.</param>
+    private void SelectAnswer(string option)
+    {
+        _currentSelection = option;
+    }
+
+    /// <summary>
+    /// Submits the selected answer to the API for validation.
+    /// </summary>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task SubmitAnswer()
+    {
+        if (string.IsNullOrEmpty(_currentSelection))
+        {
+            return;
+        }
+
+        _isLoading = true;
+        _errorMessage = null;
+
+        try
+        {
+            var currentQuestion = _questions[_currentQuestionIndex];
+
+            var request = new CheckAnswerRequest
+            {
+                QuestionId = currentQuestion.QuestionId,
+                SelectedAnswer = _currentSelection
+            };
+
+            var response = await Http.PostAsJsonAsync("https://localhost:7326/api/checkanswers", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<CheckAnswerResponse>();
+
+                if (result != null)
+                {
+                    _answeredQuestions[currentQuestion.QuestionId] = result;
+                    _selectedAnswers[currentQuestion.QuestionId] = _currentSelection;
+
+                    if (result.IsCorrect)
+                    {
+                        _correctAnswers++;
+                    }
+                }
+            }
+            else
+            {
+                _errorMessage = $"Failed to check answer: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = $"An error occurred while checking the answer: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Moves to the next question in the list.
+    /// </summary>
+    private void NextQuestion()
+    {
+        _currentQuestionIndex++;
+        _currentSelection = null;
+    }
+
+    /// <summary>
+    /// Shows the final results screen.
+    /// </summary>
+    private void ShowResults()
+    {
+        _currentQuestionIndex = _questions.Count;
+    }
+
+    /// <summary>
+    /// Resets the game to the initial state.
+    /// </summary>
+    private void ResetGame()
+    {
+        _questions.Clear();
+        _currentQuestionIndex = 0;
+        _answeredQuestions.Clear();
+        _selectedAnswers.Clear();
+        _correctAnswers = 0;
+        _currentSelection = null;
+        _errorMessage = null;
+    }
+}

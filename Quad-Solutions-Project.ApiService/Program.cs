@@ -17,6 +17,12 @@ builder.Services.AddHttpClient<IOpenTdbClient, OpenTdbClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(10);
 });
 
+// HttpClient for your own server API (Blazor frontend calls backend)
+builder.Services.AddHttpClient("ServerAPI", client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7326");
+});
+
 // AnswerStore is a singleton
 builder.Services.AddSingleton<AnswerService>();
 

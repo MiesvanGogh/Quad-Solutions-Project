@@ -133,16 +133,25 @@ namespace Quad_Solutions_Project.ApiClient
         {
             return new OpenTdbQuestion
             {
-                Category = HttpUtility.HtmlDecode(question.Category),
-                Difficulty = HttpUtility.HtmlDecode(question.Difficulty),
-                Type = HttpUtility.HtmlDecode(question.Type),
-                Question = HttpUtility.HtmlDecode(question.Question),
-                CorrectAnswer = HttpUtility.HtmlDecode(question.CorrectAnswer),
+                Category = DecodeText(question.Category),
+                Difficulty = DecodeText(question.Difficulty),
+                Type = DecodeText(question.Type),
+                Question = DecodeText(question.Question),
+                CorrectAnswer = DecodeText(question.CorrectAnswer),
                 IncorrectAnswers = question.IncorrectAnswers
-                                        .Select(HttpUtility.HtmlDecode)
-                                        .ToList()
+                            .Select(DecodeText)
+                            .ToList()
             };
+
         }
+
+        private static string DecodeText(string text)
+        {
+            var urlDecoded = HttpUtility.UrlDecode(text);
+            var htmlDecoded = HttpUtility.HtmlDecode(urlDecoded);
+            return htmlDecoded;
+        }
+
     }
 }
 
