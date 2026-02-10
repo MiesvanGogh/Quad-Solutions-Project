@@ -1,6 +1,8 @@
 <Solution>
+  <Project Path="Quad-Solutions-Project.ApiClient/Quad-Solutions-Project.ApiClient.csproj" Id="6780ed12-3852-42a6-bafe-f541e0112731" />
   <Project Path="Quad-Solutions-Project.ApiService/Quad-Solutions-Project.ApiService.csproj" />
   <Project Path="Quad-Solutions-Project.AppHost/Quad-Solutions-Project.AppHost.csproj" />
+  <Project Path="Quad-Solutions-Project.BusnLogic/Quad-Solutions-Project.BusnLogic.csproj" Id="4e1ef9a8-c3c1-4ec0-8b08-882b36846eda" />
   <Project Path="Quad-Solutions-Project.Models/Quad-Solutions-Project.Models.csproj" Id="bcb9db58-2992-42d6-a10c-881bf04e1bb3" />
   <Project Path="Quad-Solutions-Project.ServiceDefaults/Quad-Solutions-Project.ServiceDefaults.csproj" />
   <Project Path="Quad-Solutions-Project.Tests/Quad-Solutions-Project.Tests.csproj" />

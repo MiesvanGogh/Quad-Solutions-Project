@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Quad_Solutions_Project.ApiClient</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\Quad-Solutions-Project.BusnLogic\Quad-Solutions-Project.BusnLogic.csproj" />
+		<ProjectReference Include="..\Quad-Solutions-Project.Models\Quad-Solutions-Project.Models.csproj" />
+	</ItemGroup>
+	
+</Project>
